@@ -1,0 +1,28 @@
+
+df <- readr::read_csv('./DS301_FinalProject/heart_2020_cleaned.csv')
+df$HeartDisease <- ifelse(df$HeartDisease == 'Yes', 1, 0)
+df$Smoking = factor(df$Smoking)
+df$AlcoholDrinking = factor(df$AlcoholDrinking)
+df$Stroke = factor(df$Stroke)
+df$DiffWalking = factor(df$DiffWalking)
+df$Sex = factor(df$Sex)
+df$AgeCategory = factor(df$AgeCategory)
+df$Race = factor(df$Race)
+df$Diabetic = factor(df$Diabetic)
+df$PhysicalActivity = factor(df$PhysicalActivity)
+df$GenHealth = factor(df$GenHealth)
+df$Asthma = factor(df$Asthma)
+df$KidneyDisease = factor(df$KidneyDisease)
+df$SkinCancer = factor(df$SkinCancer)
+
+set.seed(100)
+n = nrow(df)
+train = sample(1:nrow(df),nrow(df)/2, replace=FALSE)
+test = (-train)
+
+glm.fit = glm(HeartDisease~., data=df, subset=train, family='binomial')
+glm.prob = predict(glm.fit, df[test,], type='response') 
+glm.pred = rep(0,length(test)+1)
+glm.pred[glm.prob > 0.5] = 1
+table(glm.pred, df[test,]$HeartDisease)
+1-mean(glm.pred == df[test,]$HeartDisease)
