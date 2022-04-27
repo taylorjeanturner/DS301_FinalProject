@@ -1,0 +1,111 @@
+---
+title: "hw10 - Kordell Schrock"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(leaps)
+library(caret)
+library(ISLR2)
+library(glmnet)
+library(boot)
+library (plyr)
+library(MASS)
+library(class)
+library(heplots)
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+df = read.csv('./heart_2020_cleaned.csv')
+df$HeartDisease <- ifelse(df$HeartDisease == 'Yes', 1, 0)
+df$Smoking = factor(df$Smoking)
+df$AlcoholDrinking = factor(df$AlcoholDrinking)
+df$Stroke = factor(df$Stroke)
+df$DiffWalking = factor(df$DiffWalking)
+df$Sex = factor(df$Sex)
+df$AgeCategory = factor(df$AgeCategory)
+df$Race = factor(df$Race)
+df$Diabetic = factor(df$Diabetic)
+df$PhysicalActivity = factor(df$PhysicalActivity)
+df$GenHealth = factor(df$GenHealth)
+df$Asthma = factor(df$Asthma)
+df$KidneyDisease = factor(df$KidneyDisease)
+df$SkinCancer = factor(df$SkinCancer)
+```
+# Lasso Regression:
+#### Use 10-fold CV to obtain the optimal λ. Present a plot of the cross-validation error as a function of λ. Report that value here
+
+```{r}
+set.seed(32)
+grid <- 10^seq(10,-2,length= nrow(df))
+train <- sample(1:nrow(df), nrow(df)/2) 
+test <- (-train)
+y = df$HeartDisease
+y.test <-  y[test]
+               
+x = model.matrix(HeartDisease ~.,df)[,-1] 
+y = df[,1] 
+
+lassoo.train = glmnet(x[train,],y[train],alpha=1,lambda=grid)
+cv.out <- cv.glmnet(x[train,], y[train], alpha=1)
+plot(cv.out)
+bestlambda = cv.out$lambda.min
+bestlambda
+log(bestlambda) #confirm min aligns with min on plot
+lasso.pred = predict(lassoo.train,s=bestlambda,newx=x[test,])
+mean((lasso.pred-y.test)^2)
+
+final.lasso = glmnet(x,y,alpha=1,lambda=bestlambda)
+coef(final.lasso)
+
+```
+
+
+# Ridge Regression:
+
+```{r}
+set.seed(32)
+grid <- 10^seq(10,-2,length= nrow(df))
+train <- sample(1:nrow(df), nrow(df)/2) 
+test <- (-train)
+y = df$HeartDisease
+y.test <-  y[test]
+               
+x = model.matrix(HeartDisease ~.,df)[,-1] 
+y = df[,1] 
+lambdas <- 10^seq(2, -3, by = -.1)
+
+ridge.train = glmnet(x[train,],y[train],alpha=0, lambda = lambdas) # on training set, alpha 0 for ridge regression
+ride.cv.out = cv.glmnet(x[train,],y[train],alpha = 0, lambda = lambdas)  #default performs 10-fold CV
+bestlambda = ride.cv.out$lambda.min ### select an optimal lambda 
+optimal_lambda = ride.cv.out$lambda.min
+plot(ride.cv.out)
+optimal_lambda
+```
+```{r}
+# Compute R^2 from true and predicted values
+eval_results <- function(true, predicted, df) {
+  SSE <- sum((predicted - true)^2)
+  SST <- sum((true - mean(true))^2)
+  R_square <- 1 - SSE / SST
+  RMSE = sqrt(SSE/nrow(df))
+
+  
+  # Model performance metrics
+data.frame(
+  RMSE = RMSE,
+  Rsquare = R_square
+)
+  
+}
+
+# Prediction and evaluation on train data
+predictions_train <- predict(ride.cv.out, s = optimal_lambda, newx = x)
+eval_results(y[train], predictions_train, df[train])
+
+# Prediction and evaluation on test data
+predictions_test <- predict(ridge_reg, s = optimal_lambda, newx = x_test)
+eval_results(y[test], predictions_test, df[test])
+```
+
