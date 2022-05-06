@@ -85,7 +85,7 @@ sum(fit$residual^2)/(319795-(18+1)) #having kidney disease did not seem to affec
 
 ##### Model Selection #####
 #best subset selection on all predictors
-regfit = regsubsets(BMI~.,data=df,nbest=1,nvmax=NULL)
+regfit = regsubsets(BMI~.,data=df,nbest=1,nvmax=17)
 regfit.sum = summary(regfit)
 n = dim(df)[1]
 p = rowSums(regfit.sum$which)
@@ -98,19 +98,19 @@ cbind(p,adjr2,cp,AIC,BIC)
 which.min(BIC)
 which.min(AIC)
 which.max(adjr2)
-regfit.sum$which[25,]
+regfit.sum$which[17,]
 
 #best subset selection - find the best test mse
 train_index = sort(sample(nrow(df),nrow(df)/2))
 train = df[train_index,]
 test = df[-train_index,]
-regfit.train = regsubsets(BMI~., data = train, nvmax=NULL)
-val.errors = rep(NA, 26)
-for(i in 1:26){
+regfit.train = regsubsets(BMI~., data = train, nvmax=17)
+val.errors = rep(NA, 17)
+for(i in 1:17){
   test.mat = model.matrix(BMI~., data=test)
   coef.m = coef(regfit.train,id=i)
   pred = test.mat[,names(coef.m)]%*%coef.m
   val.errors[i] = mean((test$BMI-pred)^2)
 }
 which.min(val.errors)
-coef(regfit.train,25)
+coef(regfit.train,17)
